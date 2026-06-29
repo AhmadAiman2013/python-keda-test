@@ -1,6 +1,7 @@
 # main.py
 import logging
 import os
+import signal
 import sys
 import time
 import pika
@@ -34,7 +35,7 @@ def process_message(body):
     """Process message - add your logic here"""
     logger.info(f"Processing message: {body.decode()}")
     # will change to 300 for long processing
-    time.sleep(1)
+    time.sleep(300)
     logger.info("Processing complete")
 
 def callback(ch, method, properties, body):
@@ -73,6 +74,17 @@ def main():
         heartbeat=600,
         blocked_connection_timeout=300,
     )
+
+    shutdown_requested = False
+
+    def handle_shutdown(signum, _frame):
+        nonlocal shutdown_requested
+        logger.info(f"Received signal {signum}, initiating graceful shutdown")
+        shutdown_requested = True
+        channel.stop_consuming()
+
+    signal.signal(signal.SIGTERM, handle_shutdown)
+    signal.signal(signal.SIGINT, handle_shutdown)
     
     try:
         connection = pika.BlockingConnection(parameters)
@@ -101,6 +113,11 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        if 'connection' in locals() and connection.is_open:
+            connection.close()
+        logger.info('Shutdown complete')
+        sys.exit(0 if shutdown_requested else 1)
 
 if __name__ == "__main__":
     main()
