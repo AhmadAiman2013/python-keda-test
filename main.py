@@ -50,6 +50,8 @@ def callback(ch, method, properties, body):
         logger.error(f"Error processing message: {e}", exc_info=True)
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
         logger.warning("Message requeued for retry")
+    finally:
+        ch.stop_consuming()
 
 def main():
     setup_logging()
@@ -117,7 +119,7 @@ def main():
         if 'connection' in locals() and connection.is_open:
             connection.close()
         logger.info('Shutdown complete')
-        sys.exit(0 if shutdown_requested else 1)
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
