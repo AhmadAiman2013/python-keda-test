@@ -1,0 +1,27 @@
+name: Build Python Docker Image
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download the repository code onto the runner
+      - name: Checkout repository code
+        uses: actions/checkout@v7
+
+      # Step 2: Set up the Docker Buildx tool (recommended for better caching)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Step 3: Build the Docker image locally without pushing it
+      - name: Build Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: my-python-app:latest
